@@ -5,3 +5,4 @@ __pycache__/
 .ruff_cache/
 reports/*
 !reports/.gitkeep
+.pytest_tmp/
