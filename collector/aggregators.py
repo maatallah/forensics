@@ -14,8 +14,8 @@ from collections.abc import Iterator
 
 _dirname = os.path.dirname
 
-OTHER_EXTENSION = "<other>"
-NO_EXTENSION = "<none>"
+OTHER_EXTENSION = "<autres>"
+NO_EXTENSION = "<sans_extension>"
 
 
 class TopFiles:

@@ -7,11 +7,11 @@ from bisect import bisect_right
 DAY: int = 86_400
 
 BUCKET_LABELS: tuple[str, ...] = (
-    "<30 days",
-    "30-90 days",
-    "90-365 days",
-    "1-3 years",
-    ">3 years",
+    "<30 jours",
+    "30-90 jours",
+    "90-365 jours",
+    "1-3 ans",
+    ">3 ans",
 )
 
 _BOUNDS: tuple[int, ...] = (30 * DAY, 90 * DAY, 365 * DAY, 3 * 365 * DAY)

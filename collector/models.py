@@ -75,17 +75,17 @@ class ScanConfig:
 
     def __post_init__(self) -> None:
         if not self.targets:
-            raise ValueError("at least one target is required")
+            raise ValueError("au moins une cible est requise")
         if self.workers < 1:
-            raise ValueError("workers must be >= 1")
+            raise ValueError("workers doit être >= 1")
         if self.top_files < 0:
-            raise ValueError("top_files must be >= 0")
+            raise ValueError("top_files doit être >= 0")
         if self.min_duplicate_size_mb < 0:
-            raise ValueError("min_duplicate_size_mb must be >= 0")
+            raise ValueError("min_duplicate_size_mb doit être >= 0")
         if self.split_depth < 1:
-            raise ValueError("split_depth must be >= 1")
+            raise ValueError("split_depth doit être >= 1")
         if self.max_directories < 100:
-            raise ValueError("max_directories must be >= 100")
+            raise ValueError("max_directories doit être >= 100")
 
     @property
     def min_duplicate_size_bytes(self) -> int:

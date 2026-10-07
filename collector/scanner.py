@@ -308,7 +308,7 @@ def run_scan(
         if not os.path.isdir(target):
             LOG.error("target not found or not a directory: %s", target)
             reports.append(
-                TargetReport(target, label, time.time(), time.time(), None, failure="target not found or inaccessible")
+                TargetReport(target, label, time.time(), time.time(), None, failure="cible introuvable ou inaccessible")
             )
             continue
         units, roots = plan_units(target, config.split_depth)

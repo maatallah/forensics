@@ -96,11 +96,21 @@ def test_full_scan_and_exports(tmp_path: Path, workers: int) -> None:
     assert dups[0] == "SizeBytes\tSizeHuman\tCount\tPath"
     assert len(dups) == 3 and dups[1].split("\t")[:3] == [str(3 * MB), "3.00 MB", "2"]
     age = (out / f"{label}_AgeBuckets.tsv").read_text(encoding="utf-8").splitlines()
-    assert age[0] == "Bucket\tFiles\tBytes\tHumanSize" and age[1].startswith("<30 days\t6\t")
+    assert age[0] == "Bucket\tFiles\tBytes\tHumanSize" and age[1].startswith("<30 jours\t6\t")
     summary = (out / f"{label}_Summary.txt").read_text(encoding="utf-8")
-    for key in ("Scan Start", "Scan End", "Duration", "Files Scanned", "Total Size", "Largest File",
-                "Largest Directory", "Top 20 Directories", "Top 20 Extensions", "Age Distribution",
-                "Duplicate Candidates"):
+    for key in (
+        "Scan Start",
+        "Scan End",
+        "Duration",
+        "Files Scanned",
+        "Total Size",
+        "Largest File",
+        "Largest Directory",
+        "Top 20 Directories",
+        "Top 20 Extensions",
+        "Age Distribution",
+        "Duplicate Candidates",
+    ):
         assert key in summary
 
 

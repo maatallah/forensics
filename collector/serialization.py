@@ -58,7 +58,7 @@ def write_files(path: Path, result: PartialResult) -> None:
 def _extension_of(path: str) -> str:
     name = path.rsplit("\\", 1)[-1].rsplit("/", 1)[-1]
     dot = name.rfind(".")
-    return name[dot:].lower() if 0 < dot < len(name) - 1 else "<none>"
+    return name[dot:].lower() if 0 < dot < len(name) - 1 else "<sans_extension>"
 
 
 def write_directories(path: Path, result: PartialResult) -> None:
@@ -72,7 +72,7 @@ def write_extensions(path: Path, result: PartialResult) -> None:
     """``Extensions.tsv``: per-extension totals, largest first."""
     total = max(result.total_bytes, 1)
     rows = (
-        (ext or "<none>", files, size, format_size(size), f"{size * 100 / total:.2f}")
+        (ext or "<sans_extension>", files, size, format_size(size), f"{size * 100 / total:.2f}")
         for ext, files, size in result.aggregates.extensions.sorted_by_bytes()
     )
     _write_tsv(path, ("Extension", "Files", "Bytes", "HumanSize", "PercentBytes"), rows)
@@ -97,79 +97,79 @@ def write_duplicates(path: Path, result: PartialResult) -> None:
 
 
 def build_summary(report: TargetReport) -> str:
-    """Render ``Summary.txt`` for one target."""
+    """Render ``Summary.txt`` for one target in French."""
     result = report.result
     assert result is not None
     duration = max(report.end - report.start, 0.0)
     lines: list[str] = []
     add = lines.append
 
-    add("Storage Forensics Collector - Summary")
-    add("=" * 38)
-    add(f"Target:             {report.target}")
-    add(f"Scan Start:         {_iso(report.start)}")
-    add(f"Scan End:           {_iso(report.end)}")
-    add(f"Duration:           {format_duration(duration)} ({duration:.1f} s)")
-    add(f"Files Scanned:      {result.total_files:,}")
-    add(f"Total Size:         {format_size(result.total_bytes)} ({result.total_bytes:,} bytes)")
+    add("Storage Forensics Collector - Résumé du scan")
+    add("=" * 44)
+    add(f"Cible :                 {report.target}")
+    add(f"Scan Start :            {_iso(report.start)}")
+    add(f"Scan End :              {_iso(report.end)}")
+    add(f"Duration :              {format_duration(duration)} ({duration:.1f} s)")
+    add(f"Files Scanned :         {result.total_files:,}")
+    add(f"Total Size :            {format_size(result.total_bytes)} ({result.total_bytes:,} octets)")
     if duration > 0:
-        add(f"Throughput:         {result.total_files / duration:,.0f} files/s, "
-            f"{result.total_bytes / duration / 1048576:,.1f} MB/s")
+        add(f"Débit :                 {result.total_files / duration:,.0f} fichiers/s, "
+            f"{result.total_bytes / duration / 1048576:,.1f} Mo/s")
     if report.interrupted:
-        add("Status:             INTERRUPTED (partial results)")
+        add("Statut :                INTERROMPU (résultats partiels)")
 
     largest = result.top_files.largest()
     add("")
     if largest:
-        add(f"Largest File:       {format_size(largest[0])} ({largest[0]:,} bytes)  {largest[1]}")
+        add(f"Largest File :          {format_size(largest[0])} ({largest[0]:,} octets)  {largest[1]}")
     else:
-        add("Largest File:       n/a")
+        add("Largest File :          n/a")
     top_dirs = result.aggregates.directories.top(20)
     if top_dirs:
         p, files, size = top_dirs[0]
-        add(f"Largest Directory:  {format_size(size)} ({files:,} files)  {p}")
+        add(f"Largest Directory :     {format_size(size)} ({files:,} fichiers)  {p}")
     else:
-        add("Largest Directory:  n/a")
+        add("Largest Directory :     n/a")
 
     add("")
-    add("Top 20 Directories (direct size)")
-    add("-" * 34)
+    add("Top 20 Directories (taille directe)")
+    add("-" * 35)
     for i, (p, files, size) in enumerate(top_dirs, start=1):
-        add(f"{i:>3}  {format_size(size):>12}  {files:>12,} files  {p}")
+        add(f"{i:>3}  {format_size(size):>12}  {files:>12,} fichiers  {p}")
 
     add("")
     add("Top 20 Extensions")
     add("-" * 17)
     top_ext = heapq.nlargest(20, result.aggregates.extensions.items(), key=lambda t: t[2])
     for i, (ext, files, size) in enumerate(top_ext, start=1):
-        add(f"{i:>3}  {(ext or '<none>'):<12} {format_size(size):>12}  {files:>12,} files")
+        add(f"{i:>3}  {(ext or '<sans_extension>'):<18} {format_size(size):>12}  {files:>12,} fichiers")
 
     add("")
-    add("Age Distribution (last modification)")
-    add("-" * 37)
+    add("Age Distribution (dernière modification)")
+    add("-" * 40)
     for label, files, size in result.ages.rows():
-        add(f"     {label:<12} {files:>14,} files  {format_size(size):>12}")
+        add(f"     {label:<14} {files:>14,} fichiers  {format_size(size):>12}")
 
     groups = result.duplicates.groups()
     reclaimable = sum(s * (c - 1) for s, c, _ in groups)
     add("")
-    add("Duplicate Candidates (same size, content NOT verified)")
-    add("-" * 54)
-    add(f"     Groups:               {len(groups):,}")
-    add(f"     Files in groups:      {sum(c for _, c, _ in groups):,}")
-    add(f"     Potential reclaimable {format_size(reclaimable)} ({reclaimable:,} bytes)")
+    add("Duplicate Candidates (même taille, contenu NON vérifié)")
+    add("-" * 55)
+    add(f"     Groupes :                  {len(groups):,}")
+    add(f"     Fichiers dans groupes :    {sum(c for _, c, _ in groups):,}")
+    add(f"     Potentiel récupérable :    {format_size(reclaimable)} ({reclaimable:,} octets)")
 
     add("")
     add("Diagnostics")
     add("-" * 11)
     errors = result.errors
-    add(f"     Access denied:        {errors.get('access_denied', 0):,}")
-    add(f"     Path too long:        {errors.get('path_too_long', 0):,}")
-    add(f"     Removed during scan:  {errors.get('removed_during_scan', 0):,}")
-    add(f"     Other errors:         {errors.get('other_error', 0) + errors.get('worker_failure', 0):,}")
-    add(f"     Directory roll-ups:   {result.aggregates.directories.compactions:,}")
-    add(f"     Extension overflow:   {'yes' if result.aggregates.extensions.overflowed else 'no'}")
-    add(f"     Duplicate sizes purged/dropped: {result.duplicates.purged:,} / {result.duplicates.dropped:,}")
+    add(f"     Accès refusés :            {errors.get('access_denied', 0):,}")
+    add(f"     Chemins trop longs :       {errors.get('path_too_long', 0):,}")
+    add(f"     Supprimés pendant scan :   {errors.get('removed_during_scan', 0):,}")
+    add(f"     Autres erreurs :           {errors.get('other_error', 0) + errors.get('worker_failure', 0):,}")
+    add(f"     Compactages répertoires :  {result.aggregates.directories.compactions:,}")
+    add(f"     Débordement extensions :   {'oui' if result.aggregates.extensions.overflowed else 'non'}")
+    add(f"     Tailles doublons purgées/ignorées : {result.duplicates.purged:,} / {result.duplicates.dropped:,}")
     return "\n".join(lines) + "\n"
 
 

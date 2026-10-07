@@ -18,46 +18,77 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
     parser = argparse.ArgumentParser(
         prog="sfcollect",
-        description="Storage Forensics Collector - fast streaming scan of local, SAN, NAS, SMB and DFS storage.",
+        description="Storage Forensics Collector - scan streaming haute performance pour stockages local, SAN, NAS, SMB et DFS.",
         epilog=(
-            "example:\n  sfcollect scan --targets D:\\ R:\\ \\\\server\\finance --workers 8 "
+            "exemple :\n  sfcollect scan --targets D:\\ R:\\ \\\\serveur\\finance --workers 8 "
             "--top-files 1000 --min-duplicate-size-mb 100 --output reports\n\n"
-            "outputs are named <Target>_<YYYYMMDD-HHMM>_<Report> (e.g. D_20261007-1050_Files.tsv)"
+            "les exports sont nommés <Cible>_<AAAAMMJJ-HHMM>_<Rapport> (ex. D_20261007-1050_Files.tsv)"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", action="version", version=f"sfcollect {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    scan = sub.add_parser("scan", help="scan one or more targets", description="Scan one or more targets and write TSV reports + Summary.txt.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    scan.add_argument("--targets", nargs="+", required=True, metavar="PATH",
-                      help=r"roots to scan, e.g. D:\ R:\ \\server\finance")
-    scan.add_argument("--workers", type=int, default=8, help="parallel workers (default 8)")
-    scan.add_argument("--top-files", type=int, default=1000, help="size of the Top-N largest files (default 1000)")
-    scan.add_argument("--min-duplicate-size-mb", type=float, default=100.0,
-                      help="minimum size (MB) for duplicate candidates (default 100)")
-    scan.add_argument("--output", default="reports", help="output directory (default: reports)")
-    scan.add_argument("--split-depth", type=int, default=1,
-                      help="directory depth at which targets are split into work units (default 1)")
-    scan.add_argument("--memory-limit-mb", type=int, default=500,
-                      help="soft RSS limit triggering purges, 0 disables (default 500)")
-    scan.add_argument("--max-directories", type=int, default=300_000,
-                      help="max tracked directories before roll-up (default 300000)")
-    scan.add_argument("--progress-interval", type=float, default=5.0, help="seconds between progress lines")
-    scan.add_argument("--quiet", action="store_true", help="disable progress output")
-    scan.add_argument("--log-file", default=None, help="log file (default: <output>/sfc.log)")
+    scan = sub.add_parser(
+        "scan",
+        help="scanner une ou plusieurs cibles",
+        description="Scanner une ou plusieurs cibles et générer les rapports TSV + Summary.txt.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    scan.add_argument(
+        "--targets",
+        nargs="+",
+        required=True,
+        metavar="CHEMIN",
+        help=r"racines à scanner, ex. D:\ R:\ \\serveur\partage",
+    )
+    scan.add_argument("--workers", type=int, default=8, help="nombre de workers parallèles")
+    scan.add_argument("--top-files", type=int, default=1000, help="taille du Top-N des plus gros fichiers")
+    scan.add_argument(
+        "--min-duplicate-size-mb",
+        type=float,
+        default=100.0,
+        help="taille minimale (Mo) pour les candidats doublons",
+    )
+    scan.add_argument("--output", default="reports", help="dossier de destination des exports")
+    scan.add_argument(
+        "--split-depth",
+        type=int,
+        default=1,
+        help="profondeur de découpage des cibles en unités de travail",
+    )
+    scan.add_argument(
+        "--memory-limit-mb",
+        type=int,
+        default=500,
+        help="limite RSS logicielle (Mo) déclenchant la purge, 0 désactive",
+    )
+    scan.add_argument(
+        "--max-directories",
+        type=int,
+        default=300_000,
+        help="nombre max de répertoires suivis avant roll-up parent",
+    )
+    scan.add_argument(
+        "--progress-interval",
+        type=float,
+        default=5.0,
+        help="intervalle en secondes entre deux affichages de progression",
+    )
+    scan.add_argument("--quiet", action="store_true", help="désactiver l'affichage de progression")
+    scan.add_argument("--log-file", default=None, help="fichier de log (défaut : <output>/sfc.log)")
     return parser
 
 
 def format_progress(s: ProgressSnapshot) -> str:
-    """Render one progress line."""
+    """Render one progress line in French."""
     eta = "n/a" if s.eta_seconds is None else format_duration(s.eta_seconds)
-    state = "DONE" if s.finished else "RUN "
+    state = "TERM" if s.finished else "SCAN"
     return (
-        f"[{state}] Target {s.target} | Root folders {s.roots_done}/{s.roots_total} | "
-        f"Files Scanned {s.files:,} | Data Volume {format_size(s.bytes)} | "
-        f"Elapsed {format_duration(s.elapsed)} | {s.files_per_sec:,.0f} files/s | "
-        f"{s.mb_per_sec:,.1f} MB/s | ETA {eta} | RSS {s.rss_bytes >> 20} MB"
+        f"[{state}] Cible {s.target} | Dossiers racines {s.roots_done}/{s.roots_total} | "
+        f"Fichiers scannés {s.files:,} | Volume données {format_size(s.bytes)} | "
+        f"Écoulé {format_duration(s.elapsed)} | {s.files_per_sec:,.0f} fichiers/s | "
+        f"{s.mb_per_sec:,.1f} Mo/s | ETA {eta} | RSS {s.rss_bytes >> 20} Mo"
     )
 
 

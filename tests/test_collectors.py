@@ -60,7 +60,7 @@ def test_extension_overflow_goes_to_other() -> None:
         e.add(ext, 10)
     data = {x: (f, s) for x, f, s in e.items()}
     assert e.overflowed
-    assert data["<other>"] == (2, 20)
+    assert data["<autres>"] == (2, 20)
     assert sum(f for f, _ in data.values()) == 4
 
 

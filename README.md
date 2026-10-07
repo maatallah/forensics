@@ -115,11 +115,11 @@ Une ligne par cible toutes les `--progress-interval` s (stderr) : Target, Root f
 `D_AgeBuckets.tsv`
 ```text
 Bucket	Files	Bytes	HumanSize
-<30 days	1204331	980345123456	913.04 GB
-30-90 days	2210443	1203345123456	1.09 TB
-90-365 days	3900112	4103345123456	3.73 TB
-1-3 years	2101233	3003345123456	2.73 TB
->3 years	1203880	2903345123456	2.64 TB
+<30 jours	1204331	980345123456	913.04 GB
+30-90 jours	2210443	1203345123456	1.09 TB
+90-365 jours	3900112	4103345123456	3.73 TB
+1-3 ans	2101233	3003345123456	2.73 TB
+>3 ans	1203880	2903345123456	2.64 TB
 ```
 
 `D_Duplicates.tsv`
@@ -132,21 +132,24 @@ SizeBytes	SizeHuman	Count	Path
 
 `D_Summary.txt` (extrait)
 ```text
-Storage Forensics Collector - Summary
-Target:             D:\
-Scan Start:         2026-10-07T10:50:00+01:00
-Scan End:           2026-10-07T11:21:12+01:00
-Duration:           00:31:12 (1872.0 s)
-Files Scanned:      10,620,000
-Total Size:         12.50 TB (13,743,895,347,200 bytes)
-Largest File:       412.00 GB (442,381,631,488 bytes)  D:\SQL\big.mdf
-Largest Directory:  1.80 TB (1,204 files)  D:\Backups
+Storage Forensics Collector - Résumé du scan
+============================================
+Cible :                 D:\
+Scan Start :            2026-10-07T10:50:00+01:00
+Scan End :              2026-10-07T11:21:12+01:00
+Duration :              00:31:12 (1872.0 s)
+Files Scanned :         10,620,000
+Total Size :            12.50 TB (13,743,895,347,200 octets)
+Débit :                 5,673 fichiers/s, 7,341.8 Mo/s
+
+Largest File :          412.00 GB (442,381,631,488 octets)  D:\SQL\big.mdf
+Largest Directory :     1.80 TB (1,204 fichiers)  D:\Backups
 ...
 ```
 
 Progression :
 ```text
-[RUN ] Target D:\ | Root folders 3/12 | Files Scanned 1,234,567 | Data Volume 45.20 GB | Elapsed 00:01:12 | 17,143 files/s | 620.1 MB/s | ETA 00:09:00 | RSS 310 MB
+[SCAN] Cible D:\ | Dossiers racines 3/12 | Fichiers scannés 1,234,567 | Volume données 45.20 GB | Écoulé 00:01:12 | 17,143 fichiers/s | 620.1 Mo/s | ETA 00:09:00 | RSS 310 Mo
 ```
 
 ## Tests et qualité
