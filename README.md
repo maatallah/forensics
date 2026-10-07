@@ -7,17 +7,19 @@ Parcours **unique**, **streaming**, **parallèle**, mémoire **bornée**. Python
 
 ```powershell
 git clone https://github.com/maatallah/forensics
-cd forensics\SFC
+cd forensics
 python -m pip install -e .[dev]
 ```
 
 ## Utilisation
 
 ```powershell
-sfc scan --targets D:\ R:\ \\server\finance --workers 8 --top-files 1000 --min-duplicate-size-mb 100 --output reports
+sfcollect scan --targets D:\ R:\ \\server\finance --workers 8 --top-files 1000 --min-duplicate-size-mb 100 --output reports
 # ou sans installation :
 python -m cli.main scan --targets D:\ --output reports
 ```
+
+> **Note :** la commande s'appelle `sfcollect` car `sfc` est une commande Windows réservée (System File Checker, `System32\sfc.exe`). `python -m cli.main` reste utilisable.
 
 > PowerShell/cmd : n'écrivez pas `"D:\"` entre guillemets (le `\"` final échappe le guillemet). Utilisez `D:\` ou `"D:\\"`.
 
@@ -48,7 +50,7 @@ SFC/
 │   ├── age_analysis.py        5 buckets d'âge
 │   ├── serialization.py       exports TSV UTF-8 + Summary.txt
 │   └── models.py              config, limites, PartialResult, snapshots
-├── cli/main.py                commande `sfc scan`
+├── cli/main.py                commande `sfcollect scan`
 ├── reports/  tests/  pyproject.toml  README.md  CHANGELOG.md
 ```
 
@@ -97,7 +99,7 @@ Une ligne par cible toutes les `--progress-interval` s (stderr) : Target, Root f
 
 ## Exports (`--output`)
 
-`<Cible>_<AAAAMMJJ-HHMM>_` = nom dérivé de la cible + date/heure de début de scan, ex. `D_20261007-1050_Files.tsv` ou `server_finance_20261007-1050_Summary.txt`. Aide : `sfc --help`, `sfc scan --help`.
+`<Cible>_<AAAAMMJJ-HHMM>_` = nom dérivé de la cible + date/heure de début de scan, ex. `D_20261007-1050_Files.tsv` ou `server_finance_20261007-1050_Summary.txt`. Aide : `sfcollect --help`, `sfcollect scan --help`.
 
 | Fichier | Colonnes |
 |---|---|

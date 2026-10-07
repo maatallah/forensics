@@ -1,4 +1,4 @@
-"""``sfc`` command line entry point."""
+"""``sfcollect`` command line entry point."""
 
 from __future__ import annotations
 
@@ -17,16 +17,16 @@ from collector.serialization import format_duration, write_reports
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
     parser = argparse.ArgumentParser(
-        prog="sfc",
+        prog="sfcollect",
         description="Storage Forensics Collector - fast streaming scan of local, SAN, NAS, SMB and DFS storage.",
         epilog=(
-            "example:\n  sfc scan --targets D:\\ R:\\ \\\\server\\finance --workers 8 "
+            "example:\n  sfcollect scan --targets D:\\ R:\\ \\\\server\\finance --workers 8 "
             "--top-files 1000 --min-duplicate-size-mb 100 --output reports\n\n"
             "outputs are named <Target>_<YYYYMMDD-HHMM>_<Report> (e.g. D_20261007-1050_Files.tsv)"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--version", action="version", version=f"sfc {__version__}")
+    parser.add_argument("--version", action="version", version=f"sfcollect {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     scan = sub.add_parser("scan", help="scan one or more targets", description="Scan one or more targets and write TSV reports + Summary.txt.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -91,7 +91,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             progress_interval=args.progress_interval,
         )
     except ValueError as exc:
-        print(f"sfc: invalid argument: {exc}", file=sys.stderr)
+        print(f"sfcollect: invalid argument: {exc}", file=sys.stderr)
         return 2
 
     reports = run_scan(config, None if args.quiet else _print_progress)
@@ -99,7 +99,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     exit_code = 0
     for report in reports:
         if report.failure:
-            print(f"sfc: {report.target}: {report.failure}", file=sys.stderr)
+            print(f"sfcollect: {report.target}: {report.failure}", file=sys.stderr)
             exit_code = 1
             continue
         for path in write_reports(report, out):
