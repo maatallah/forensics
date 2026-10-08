@@ -1,7 +1,7 @@
 # Storage Forensics Collector (SFC)
 
 Collecteur Enterprise de métadonnées de stockage Windows (disques locaux, SAN, NAS, SMB, DFS) destiné à alimenter la plateforme d'analyse **SFA**.
-Parcours **unique**, **streaming**, **parallèle**, mémoire **bornée**. Python ≥ 3.12, **aucune dépendance d'exécution**.
+Parcours **unique**, **streaming**, **parallèle**, mémoire **bornée**. Python ≥ 3.12, **aucune dépendance d'exécution** ; XlsxWriter est une option purement locale (tableau de bord Excel).
 
 ## Installation
 
@@ -11,12 +11,27 @@ cd forensics
 python -m pip install -e .[dev]
 ```
 
+Pour le tableau de bord Excel (`--excel`, `dashboard`), ajoutez l'extrait `excel` :
+
+```powershell
+python -m pip install -e ".[excel]"
+```
+
 ## Utilisation
 
 ```powershell
 sfcollect scan --targets D:\ R:\ \\server\finance --workers 8 --top-files 1000 --min-duplicate-size-mb 100 --output reports
+# avec tableau de bord Excel en sortie :
+sfcollect scan --targets D:\ --output reports --excel
 # ou sans installation :
 python -m cli.main scan --targets D:\ --output reports
+```
+
+Tableau de bord à partir d'exports déjà produits (aucun rescanner) :
+
+```powershell
+sfcollect dashboard reports\D_20261007-1050
+sfcollect dashboard reports --output rapports\synthese.xlsx --max-rows 5000
 ```
 
 > **Note :** la commande s'appelle `sfcollect` car `sfc` est une commande Windows réservée (System File Checker, `System32\sfc.exe`). `python -m cli.main` reste utilisable.
@@ -35,8 +50,18 @@ python -m cli.main scan --targets D:\ --output reports
 | `--max-directories` | 300000 | Nb max de dossiers suivis avant roll-up |
 | `--progress-interval` | 5 | Secondes entre deux lignes de progression |
 | `--quiet` / `--log-file` | | Silence / fichier de log (défaut `<output>/sfc.log`) |
+| `--excel` | off | Génère `<Préfixe>_Dashboard.xlsx` après les exports (nécessite XlsxWriter) |
 
-Code retour : `0` OK, `1` cible inaccessible, `2` argument invalide, `130` interrompu (Ctrl+C, résultats partiels écrits).
+La sous-commande `dashboard` travaille **uniquement** à partir des exports existants :
+
+| Argument | Défaut | Rôle |
+|---|---|---|
+| `SOURCE` | requis | Préfixe d'exports, fichier d'export ou dossier contenant un seul scan |
+| `--output` | `<préfixe>_Dashboard.xlsx` | Fichier `.xlsx` de destination |
+| `--max-rows` | 100000 | Plafond de lignes des feuilles volumineuses (répertoires, doublons) |
+
+Code retour : `0` OK, `1` cible inaccessible (ou échec du tableau de bord pour `dashboard`), `2` argument invalide, `130` interrompu (Ctrl+C, résultats partiels écrits).
+Un `--excel` qui échoue (XlsxWriter absent, fichier ouvert dans Excel) n'affiche qu'un avertissement : **le code retour du scan est inchangé**.
 
 ## Architecture
 
@@ -49,8 +74,9 @@ SFC/
 │   ├── duplicate_detector.py  candidats par taille, bornés
 │   ├── age_analysis.py        5 buckets d'âge
 │   ├── serialization.py       exports TSV UTF-8 + Summary.txt
+│   ├── excel_dashboard.py     tableau de bord .xlsx à partir des TSV (optionnel)
 │   └── models.py              config, limites, PartialResult, snapshots
-├── cli/main.py                commande `sfcollect scan`
+├── cli/main.py                commandes `sfcollect scan` et `sfcollect dashboard`
 ├── reports/  tests/  pyproject.toml  README.md  CHANGELOG.md
 ```
 
@@ -109,6 +135,26 @@ Une ligne par cible toutes les `--progress-interval` s (stderr) : Target, Root f
 | `<Cible>_AgeBuckets.tsv` | Bucket, Files, Bytes, HumanSize |
 | `<Cible>_Duplicates.tsv` | SizeBytes, SizeHuman, Count, Path |
 | `<Cible>_Summary.txt` | voir exemple |
+| `<Préfixe>_Dashboard.xlsx` | 8 feuilles : tableau de bord, plus gros fichiers, répertoires, extensions, âge, doublons, résumé, données graphiques (optionnel) |
+
+### Tableau de bord Excel (`--excel` / `sfcollect dashboard`)
+
+Le classeur est reconstruit **à partir des exports TSV** : aucun rescanner, aucun appel système.
+Il faut XlsxWriter (`pip install -e ".[excel]"`) ; sans lui, la commande affiche un message clair
+et le reste du scan fonctionne normalement.
+
+* **Bannière** : cible, horaires, durée, statut (dont `INTERROMPU` si le scan l'était).
+* **6 tuiles KPI** : fichiers scannés, volume total, plus gros fichier, potentiel doublons
+  récupérable, part des données les plus anciennes, erreurs de lecture (accès refusés, chemins
+  trop longs, …). Les totaux sont recalculés depuis `Extensions.tsv`, exacts même après les
+  purges mémoire du scan.
+* **4 graphiques** : répartition du volume par extension (anneau), âge des données (colonnes +
+  courbe des nombres de fichiers), top des répertoires, top des extensions par nombre de fichiers.
+* **Feuilles tabulaires** avec filtres natifs et barres de données ; répertoires et doublons
+  plafonnés à `--max-rows` lignes (les TSV restent la source complète, une note le rappelle dans
+  le classeur).
+* Valeurs écrites **typées** (nombres, dates) pour que tri, filtres et graphiques fonctionnent ;
+  les chemins ne sont jamais interprétés comme formules ni URLs.
 
 ### Exemple de sortie
 

@@ -84,7 +84,9 @@ def current_rss_bytes() -> int:
                 return int(counters.WorkingSetSize)
             return 0
         with open("/proc/self/statm", encoding="ascii") as fh:
-            return int(fh.read().split()[1]) * os.sysconf("SC_PAGE_SIZE")
+            # os.sysconf only exists on POSIX; on Windows this branch is never reached.
+            page_size: int = int(os.sysconf("SC_PAGE_SIZE"))  # type: ignore[attr-defined]
+            return int(fh.read().split()[1]) * page_size
     except (OSError, ValueError, AttributeError, IndexError):
         return 0
 

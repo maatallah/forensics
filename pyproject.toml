@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sfc"
-version = "0.2.0"
+version = "0.3.0"
 description = "Storage Forensics Collector - streaming, multi-target file-system scanner"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -12,7 +12,8 @@ license = { text = "MIT" }
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "mypy>=1.10", "ruff>=0.5"]
+excel = ["XlsxWriter>=3.1"]
+dev = ["pytest>=8", "mypy>=1.10", "ruff>=0.5", "XlsxWriter>=3.1"]
 
 [project.scripts]
 sfcollect = "cli.main:main"
@@ -29,6 +30,14 @@ addopts = "--basetemp=.pytest_tmp -p no:cacheprovider"
 python_version = "3.12"
 strict = true
 
+[[tool.mypy.overrides]]
+module = ["xlsxwriter", "xlsxwriter.*"]
+ignore_missing_imports = true
+
 [tool.ruff]
 line-length = 120
 target-version = "py312"
+
+# Explicit rule set: the CI gate must not change when ruff widens its defaults.
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.0 - 2026-10-08
+
+### Added
+- Excel dashboard (`<Préfixe>_Dashboard.xlsx`): 8 sheets (KPI banner, top files,
+  directories, extensions, age, duplicates, summary, chart data), 4 charts,
+  5 filterable Excel tables, built from the TSV exports without rescanning.
+- `sfcollect scan --excel` builds the dashboard right after the exports; a
+  dashboard failure only warns and never changes the scan exit code.
+- `sfcollect dashboard SOURCE [--output FILE] [--max-rows N]` builds it later
+  from a prefix, any export file, or a directory containing one scan.
+- Optional extra: `pip install -e ".[excel]"` (XlsxWriter >= 3.1); the core
+  stays dependency-free and imports XlsxWriter lazily.
+
+### Changed
+- Pinned the ruff rule set in `pyproject.toml` so the lint gate no longer
+  changes when ruff widens its defaults.
+- `mypy --strict` now passes (xlsxwriter override, POSIX-only `os.sysconf`
+  annotated).
+
 ## 0.2.0 - 2026-10-07
 
 ### Added

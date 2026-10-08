@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from collector import __version__
+from collector.excel_dashboard import DEFAULT_MAX_ROWS, DashboardError, build_dashboard, resolve_prefix
 from collector.models import ProgressSnapshot, ScanConfig, format_size
 from collector.scanner import run_scan
 from collector.serialization import format_duration, write_reports
@@ -21,7 +22,10 @@ def build_parser() -> argparse.ArgumentParser:
         description="Storage Forensics Collector - scan streaming haute performance pour stockages local, SAN, NAS, SMB et DFS.",
         epilog=(
             "exemple :\n  sfcollect scan --targets D:\\ R:\\ \\\\serveur\\finance --workers 8 "
-            "--top-files 1000 --min-duplicate-size-mb 100 --output reports\n\n"
+            "--top-files 1000 --min-duplicate-size-mb 100 --output reports\n"
+            "  sfcollect scan --targets D:\\ --excel\n\n"
+            "tableau de bord à partir d'exports existants :\n"
+            "  sfcollect dashboard reports\\D_20261007-1050\n\n"
             "les exports sont nommés <Cible>_<AAAAMMJJ-HHMM>_<Rapport> (ex. D_20261007-1050_Files.tsv)"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -77,6 +81,33 @@ def build_parser() -> argparse.ArgumentParser:
     )
     scan.add_argument("--quiet", action="store_true", help="désactiver l'affichage de progression")
     scan.add_argument("--log-file", default=None, help="fichier de log (défaut : <output>/sfc.log)")
+    scan.add_argument(
+        "--excel",
+        action="store_true",
+        help="générer <Préfixe>_Dashboard.xlsx après les exports (nécessite XlsxWriter)",
+    )
+
+    dash = sub.add_parser(
+        "dashboard",
+        help="construire un tableau de bord Excel à partir d'exports existants",
+        description=(
+            "Construire <Préfixe>_Dashboard.xlsx à partir des exports TSV d'un scan "
+            "déjà réalisé (aucun rescanner). Nécessite XlsxWriter."
+        ),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    dash.add_argument(
+        "source",
+        metavar="SOURCE",
+        help=r"préfixe d'exports, fichier d'export ou dossier, ex. reports\H_20261007-1529",
+    )
+    dash.add_argument("--output", default=None, help="fichier .xlsx de destination (défaut : <préfixe>_Dashboard.xlsx)")
+    dash.add_argument(
+        "--max-rows",
+        type=int,
+        default=DEFAULT_MAX_ROWS,
+        help="nombre maximal de lignes par feuille volumineuse",
+    )
     return parser
 
 
@@ -98,8 +129,52 @@ def _print_progress(snapshots: list[ProgressSnapshot]) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Entry point. Returns the process exit code (0 ok, 1 partial failure, 130 interrupted)."""
+    """Entry point. Returns the exit code (0 ok, 1 failure, 2 bad argument, 130 interrupted)."""
     args = build_parser().parse_args(argv)
+    if args.command == "dashboard":
+        return _dashboard_command(args)
+    return _scan_command(args)
+
+
+def _dashboard_command(args: argparse.Namespace) -> int:
+    """Build a dashboard from existing exports. Exit codes: 0 ok, 1 build failed, 2 bad source."""
+    try:
+        prefix = _resolve_dashboard_source(args.source)
+    except DashboardError as exc:
+        print(f"sfcollect: {exc}", file=sys.stderr)
+        return 2
+    try:
+        path = build_dashboard(prefix, args.output, args.max_rows)
+    except DashboardError as exc:
+        print(f"sfcollect: {exc}", file=sys.stderr)
+        return 1
+    print(f"wrote {path}")
+    return 0
+
+
+def _resolve_dashboard_source(source: str) -> Path:
+    """Return the export prefix of ``SOURCE`` (prefix, export file, or directory of exports)."""
+    path = Path(source)
+    if path.is_dir():
+        prefixes = sorted({resolve_prefix(found) for found in path.glob("*_Files.tsv")})
+        if not prefixes:
+            raise DashboardError(f"aucun export de scan dans {path}")
+        if len(prefixes) > 1:
+            names = ", ".join(p.name for p in prefixes[:3])
+            more = " …" if len(prefixes) > 3 else ""
+            raise DashboardError(
+                f"{path} contient {len(prefixes)} scans ({names}{more}) : précisez un préfixe"
+            )
+        return prefixes[0]
+    # A bare prefix (``reports\H_20261007-1050``) is not a path on disk: look for its exports.
+    prefix = resolve_prefix(path)
+    if path.exists() or Path(f"{prefix}_Files.tsv").is_file():
+        return prefix
+    raise DashboardError(f"source introuvable : {source}")
+
+
+def _scan_command(args: argparse.Namespace) -> int:
+    """Run ``sfcollect scan``. Returns 0 ok, 1 target failure, 2 bad argument, 130 interrupted."""
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
 
@@ -133,8 +208,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"sfcollect: {report.target}: {report.failure}", file=sys.stderr)
             exit_code = 1
             continue
-        for path in write_reports(report, out):
+        paths = write_reports(report, out)
+        for path in paths:
             print(f"wrote {path}")
+        if args.excel and paths:
+            try:
+                dashboard = build_dashboard(resolve_prefix(paths[0]))
+            except DashboardError as exc:
+                # The scan itself succeeded: warn, but do not change the exit code.
+                print(f"sfcollect: {report.target}: {exc}", file=sys.stderr)
+            else:
+                print(f"wrote {dashboard}")
         if report.interrupted:
             exit_code = 130
     root.removeHandler(handler)
