@@ -230,9 +230,9 @@ def test_cli_dashboard_from_prefix(tmp_path: Path, capsys: pytest.CaptureFixture
     prefix = resolve_prefix(next(out.glob("*_Files.tsv")))
     assert not prefix.exists()  # the prefix is only a file-name stem
 
-    assert main(["dashboard", str(prefix), "--output", str(tmp_path / "rapports" / "synthese.xlsx")]) == 0
+    assert main(["dashboard", str(prefix), "--output", str(tmp_path / "out" / "synthese.xlsx")]) == 0
     capsys.readouterr()
-    assert (tmp_path / "rapports" / "synthese.xlsx").is_file()
+    assert (tmp_path / "out" / "synthese.xlsx").is_file()
 
 
 def test_cli_dashboard_errors(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

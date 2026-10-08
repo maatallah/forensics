@@ -30,8 +30,9 @@ python -m cli.main scan --targets D:\ --output reports
 Tableau de bord à partir d'exports déjà produits (aucun rescanner) :
 
 ```powershell
-sfcollect dashboard reports\D_20261007-1050
-sfcollect dashboard reports --output rapports\synthese.xlsx --max-rows 5000
+sfcollect dashboard reports\v2\H_20261007-1529
+sfcollect dashboard reports\v2                     # dossier contenant un seul scan
+sfcollect dashboard reports\v2\H_20261007-1529 --output reports\v2\synthese.xlsx --max-rows 5000
 ```
 
 > **Note :** la commande s'appelle `sfcollect` car `sfc` est une commande Windows réservée (System File Checker, `System32\sfc.exe`). `python -m cli.main` reste utilisable.
